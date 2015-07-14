@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merger version="3"><dataSet config="main"><source path="/Users/cheshire_cat/workspace/SetTime_new/app/src/main/assets"><file name="city.db" path="/Users/cheshire_cat/workspace/SetTime_new/app/src/main/assets/city.db"/><file name="platforms.xml" path="/Users/cheshire_cat/workspace/SetTime_new/app/src/main/assets/platforms.xml"/></source></dataSet><dataSet config="debug"><source path="/Users/cheshire_cat/workspace/SetTime_new/app/src/debug/assets"/></dataSet></merger>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <solid android:color="#eaeaea" />
+
+</shape><!-- From: file:/Users/cheshire_cat/workspace/SetTime_new/app/src/main/res/drawable/ex_normal_textview_readonly_bg.xml -->

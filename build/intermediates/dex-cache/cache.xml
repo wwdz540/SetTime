@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2" >
+
+    <item
+        jar="/Users/cheshire_cat/workspace/SetTime_new/app/libs/locSDK_3.3.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="590d32bdf5bb37ee372a21696b8f7853b224e31f">
+        <dex dex="/Users/cheshire_cat/workspace/SetTime_new/app/build/intermediates/pre-dexed/debug/locSDK_3.3-797244d9b5e763427e8d9aad412c1cbcc5e58244.jar" />
+    </item>
+    <item
+        jar="/Users/cheshire_cat/app/adt-bundle-mac/sdk/extras/android/m2repository/com/android/support/support-v4/19.1.0/support-v4-19.1.0.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="85f201b380937e61a9dce6ca90ccf6872abbfb67">
+        <dex dex="/Users/cheshire_cat/workspace/SetTime_new/app/build/intermediates/pre-dexed/debug/support-v4-19.1.0-21e244c313a0d73938d439b783a5dd855a903fa8.jar" />
+    </item>
+    <item
+        jar="/Users/cheshire_cat/workspace/SetTime_new/app/libs/Baidu-SocialShare-SDK-Android-L3-1.4.1.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="14b53a7191ba1c336e23ed073cb13d0c6d7c8368">
+        <dex dex="/Users/cheshire_cat/workspace/SetTime_new/app/build/intermediates/pre-dexed/debug/Baidu-SocialShare-SDK-Android-L3-1.4.1-5123a78d4d820a0f849ab44c6c747e07785a6066.jar" />
+    </item>
+
+</items>
