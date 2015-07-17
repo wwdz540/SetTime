@@ -62,6 +62,8 @@ public class TimerService extends Service {
      */
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+
+
 /**
         Notification notification = new Notification(R.drawable.ic_app_lg,
                 getString(R.string.app_name), System.currentTimeMillis());
