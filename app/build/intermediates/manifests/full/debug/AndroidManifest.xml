@@ -27,6 +27,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
+    <android:uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+
     <application
         android:name="com.winhands.activity.BaseApplication"
         android:allowBackup="true"
@@ -64,7 +66,7 @@
         <service android:name="com.winhands.service.FxService" >
         </service>
 
-        <receiver android:name="com.winhands.widgets.TimerAppWidget" >
+        <receiver android:name="com.winhands.widgets.TimerAppWidgetProvider" >
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.untas.UPDATE_ALL" />
@@ -79,10 +81,14 @@
         <service
             android:name="com.winhands.widgets.TimerService"
             android:process=":remote" >
-            <intent-filter android:priority="1000" >
+            <intent-filter>
                 <action android:name="aw.untas.com.timerappwidget.TimerService" />
             </intent-filter>
         </service>
+        <!-- <service -->
+        <!-- android:name="com.winhands.widgets.TimerIntentService" -->
+        <!-- android:exported="false" > -->
+        <!-- </service> -->
     </application>
 
 </manifest>

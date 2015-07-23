@@ -10,7 +10,9 @@ import android.util.Log;
 
 import com.winhands.settime.R;
 
-public class TimerService extends Service {
+import java.util.Date;
+
+public class TimerService extends Service implements Runnable {
 
     private static final String TAG="TSA";
     private static String ACTION_UPDATE_ALL="com.untas.UPDATE_ALL";
@@ -19,27 +21,25 @@ public class TimerService extends Service {
 
     private static final int UPDATE_TIME = 1000;
     // 周期性更新 widget 的线程
-    private UpdateThread mUpdateThread;
+    private Thread mUpdateThread;
     private Context mContext;
+    private TimerAppWidgetProvider appWidgetProvider = TimerAppWidgetProvider.getInstance();
 
 
 
     @Override
     public void onCreate() {
-        Log.d(TAG, "Service Createed");
-        // 创建并开启线程UpdateThread
-        mUpdateThread = new UpdateThread();
-        mUpdateThread.start();
-
+        Log.d(TAG, "Service Createed==");
         mContext = this.getApplicationContext();
+        // 创建并开启线程UpdateThread
+        mUpdateThread = new Thread(this);
+        mUpdateThread.start();
 
         super.onCreate();
     }
 
     @Override
     public void onDestroy(){
-
-
         // 中断线程，即结束线程。
         if (mUpdateThread != null) {
             mUpdateThread.interrupt();
@@ -62,34 +62,31 @@ public class TimerService extends Service {
      */
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        /**
+         Notification notification = new Notification(R.drawable.ic_app_lg,
+         getString(R.string.app_name), System.currentTimeMillis());
 
-
-/**
-        Notification notification = new Notification(R.drawable.ic_app_lg,
-                getString(R.string.app_name), System.currentTimeMillis());
-
-        PendingIntent pendingintent = PendingIntent.getActivity(this, 0,
-                new Intent(), 0);
-        notification.setLatestEventInfo(this, "时间服务", "时间服务",
-                pendingintent);
-        startForeground(0x111, notification);**/
+         PendingIntent pendingintent = PendingIntent.getActivity(this, 0,
+         new Intent(), 0);
+         notification.setLatestEventInfo(this, "时间服务", "时间服务",
+         pendingintent);
+         startForeground(0x111, notification);**/
         return super.onStartCommand(intent, flags, startId);
 
     }
 
-    private class UpdateThread extends Thread {
-        @Override
-        public void run() {
-            super.run();
-            try {
-                while (true) {
-                    Intent updateIntent=new Intent(ACTION_UPDATE_ALL);
-                    mContext.sendBroadcast(updateIntent);
-                    Thread.sleep(UPDATE_TIME);
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+    @Override
+    public void run() {
+
+        try {
+            while (true) {
+                Log.d(TAG,"run date");
+                Date now = new Date();
+                appWidgetProvider.setTime(mContext,now);
+                Thread.sleep(UPDATE_TIME);
             }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 

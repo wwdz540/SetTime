@@ -104,12 +104,11 @@ public class TimerAppWidget extends AppWidgetProvider {
     }
 
     private static void startService(Context context){
-      //  context.startService(new Intent(TimerService.class.getName()).setPackage("com.winhands.settime"));
-        context.startService(new Intent(context.getApplicationContext(),TimerService.class));
+          context.startService(new Intent(TimerService.class.getName()).setPackage("com.winhands.settime"));
+       // context.startService(new Intent(context.getApplicationContext(),TimerService.class));
 
     }
 
-    private static  final DateFormat DF=new SimpleDateFormat("HH : mm : ss");
     private static void updateAllAppWidgets(Context context, AppWidgetManager manager, Set<Integer> idsSet) {
 
         Date now = new Date();
