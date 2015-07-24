@@ -5,36 +5,43 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.IBinder;
 import android.util.Log;
 
+import com.winhands.bean.SntpClient;
 import com.winhands.settime.R;
+import com.winhands.util.SharePreferenceUtils;
 
+import java.util.Calendar;
 import java.util.Date;
 
 public class TimerService extends Service implements Runnable {
 
-    private static final String TAG="TSA";
+    public static final String TAG="TSA";
     private static String ACTION_UPDATE_ALL="com.untas.UPDATE_ALL";
 
     private static String ACTION_SERVICE_STOP="com.untas.ACTION_SERVICE_STOP";
+    private SharedPreferences sp;
 
     private static final int UPDATE_TIME = 1000;
     // 周期性更新 widget 的线程
     private Thread mUpdateThread;
+
     private Context mContext;
+    Date netDate;
+    Calendar netDAteCal;
     private TimerAppWidgetProvider appWidgetProvider = TimerAppWidgetProvider.getInstance();
 
 
 
     @Override
     public void onCreate() {
-        Log.d(TAG, "Service Createed==");
+       // Log.d(TAG, "Service Createed==");
+        sp = new SharePreferenceUtils(this).getSP();
         mContext = this.getApplicationContext();
-        // 创建并开启线程UpdateThread
-        mUpdateThread = new Thread(this);
-        mUpdateThread.start();
-
+        netDAteCal=Calendar.getInstance();
+        initThread();
         super.onCreate();
     }
 
@@ -75,14 +82,42 @@ public class TimerService extends Service implements Runnable {
 
     }
 
+    private void initThread(){
+        Log.d(TAG,"Pre Thread");
+       new Thread(new Runnable() {
+            @Override
+            public void run() {
+                getNetDate("1.cn.pool.ntp.org");
+            }
+        }).start();
+    }
+    private void getNetDate(String ip) {
+        SntpClient client = new SntpClient();
+        if(client.requestTime(ip,300)){
+
+
+            long now = client.getNtpTime() + System.nanoTime() / 1000
+                    - client.getNtpTimeReference();
+
+            netDate = new Date(now
+                    - ((8 - sp.getInt("timezone", 8)) * 60 * 60 * 1000));
+            netDAteCal.setTime(netDate);
+            Log.d(TAG,"netDateIs"+netDate);
+            // 创建并开启线程UpdateThread
+            mUpdateThread = new Thread(this);
+            mUpdateThread.start();
+
+        }
+    }
+
     @Override
     public void run() {
 
         try {
             while (true) {
-                Log.d(TAG,"run date");
-                Date now = new Date();
-                appWidgetProvider.setTime(mContext,now);
+
+                netDAteCal.add(Calendar.SECOND,1);
+                appWidgetProvider.setTime(mContext,netDAteCal.getTime());
                 Thread.sleep(UPDATE_TIME);
             }
         } catch (InterruptedException e) {
