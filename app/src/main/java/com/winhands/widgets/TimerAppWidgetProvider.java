@@ -1,14 +1,17 @@
 package com.winhands.widgets;
 
+import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.nfc.Tag;
 import android.util.Log;
 import android.widget.RemoteViews;
 
+import com.winhands.activity.MainActivity;
 import com.winhands.settime.R;
 
 import java.util.Date;
@@ -20,6 +23,7 @@ import java.util.Set;
  */
 public class TimerAppWidgetProvider  extends AppWidgetProvider {
     private static  final  String LOGTAG="TSA";
+    private static  final String CLICK_ACTION = "com.untsa.TIMER_APP_WEIDGET_CLICK";
 
     private static TimerAppWidgetProvider instance;
 
@@ -32,7 +36,8 @@ public class TimerAppWidgetProvider  extends AppWidgetProvider {
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-        Log.d(LOGTAG,"on Update");
+        Log.d(LOGTAG, "on Update");
+
         super.onUpdate(context, appWidgetManager, appWidgetIds);
     }
 
@@ -52,9 +57,23 @@ public class TimerAppWidgetProvider  extends AppWidgetProvider {
         super.onDisabled(context);
     }
 
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        Log.d(LOGTAG, "onReceive=" + intent.getAction());
+        if(intent.getAction().equals(CLICK_ACTION)){
+            Intent activityAction = new Intent(context.getApplicationContext(),MainActivity.class);
+
+            activityAction.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(activityAction);
+            return;
+        }
+
+
+        super.onReceive(context, intent);
+    }
 
     private void startService(Context context){
-      //   context.startService(new Intent(TimerService.class.getName()).setPackage("com.winhands.settime"));
+      //  context.startService(new Intent(TimerService.class.getName()).setPackage("com.winhands.settime"));
        Intent intent = new Intent(context.getApplicationContext(),TimerService.class);
        context.startService(intent);
     }
@@ -65,34 +84,49 @@ public class TimerAppWidgetProvider  extends AppWidgetProvider {
     }
 
 
-     void setTime(Context context,Date date){
+    public void setTime(Context context,Date date){
          AppWidgetManager  am= AppWidgetManager.getInstance(context);
-        int[] widgetIds =  am.getAppWidgetIds(new ComponentName(context,this.getClass()));
+         int[] widgetIds =  am.getAppWidgetIds(new ComponentName(context,this.getClass()));
          if(widgetIds.length!=0)
          updateAllAppWidgets(context,am,widgetIds,date);
 
      }
 
+     void initClickAction(Context context,RemoteViews remoteViews){
+         Intent intentClick = new Intent(CLICK_ACTION);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0, intentClick, 0);
+       //  PendingIntent pendingIntent = PendingIntent.getActivity(context,0,intentClick,0);
+         remoteViews.setOnClickPendingIntent(R.id.nts_logo,pendingIntent);
+     }
+
 
       void updateAllAppWidgets(Context context, AppWidgetManager manager, int[] ids,Date date) {
 
+        RemoteViews remoteView = new RemoteViews(context.getPackageName(), R.layout.timer_widget_2);
+        initClickAction(context,remoteView);
 
-        RemoteViews remoteView = new RemoteViews(context.getPackageName(), R.layout.timer_widget_1);
+        int d;
         for(Integer tmpAppId:ids){
             int appId=tmpAppId.intValue();
 
             // remoteView.setTextViewText(R.id.appwidget_text,DF.format(date));
-            int h=date.getHours();
-            remoteView.setImageViewResource(R.id.nb_h0,Utils.NUMBERS[h%10]);
-            remoteView.setImageViewResource(R.id.nb_h1,Utils.NUMBERS[h/10]);
-
-            int m=date.getMinutes();
-            remoteView.setImageViewResource(R.id.nb_m0,Utils.NUMBERS[m%10]);
-            remoteView.setImageViewResource(R.id.nb_m1,Utils.NUMBERS[m/10]);
-
-            int s = date.getSeconds();
-            remoteView.setImageViewResource(R.id.nb_s0,Utils.NUMBERS[s%10]);
-            remoteView.setImageViewResource(R.id.nb_s1,Utils.NUMBERS[s/10]);
+//            int h=date.getHours();
+//            remoteView.setImageViewResource(R.id.nb_h0,Utils.NUMBERS[h%10]);
+//            remoteView.setImageViewResource(R.id.nb_h1,Utils.NUMBERS[h/10]);
+//
+//            int m=date.getMinutes();
+//            remoteView.setImageViewResource(R.id.nb_m0,Utils.NUMBERS[m%10]);
+//            remoteView.setImageViewResource(R.id.nb_m1,Utils.NUMBERS[m/10]);
+//
+//            int s = date.getSeconds();
+//            remoteView.setImageViewResource(R.id.nb_s0,Utils.NUMBERS[s%10]);
+//            remoteView.setImageViewResource(R.id.nb_s1,Utils.NUMBERS[s/10]);
+            d=date.getHours();
+            remoteView.setTextViewText(R.id.tv_hour,d/10+""+d%10);
+            d=date.getMinutes();
+            remoteView.setTextViewText(R.id.tv_min,d/10+""+d%10);
+            d=date.getSeconds();
+            remoteView.setTextViewText(R.id.tv_sec,d/10+""+d%10);
 
             manager.updateAppWidget(appId,remoteView);
         }

@@ -1,5 +1,7 @@
 package com.winhands.bean;
 
+import com.winhands.util.L;
+
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -40,7 +42,7 @@ public class SntpClient {
     public boolean requestTime(String host, int timeout) {  
         try {  
             DatagramSocket socket = new DatagramSocket();  
-            socket.setSoTimeout(timeout);  
+            socket.setSoTimeout(timeout);
             InetAddress address = InetAddress.getByName(host);  
             byte[] buffer = new byte[NTP_PACKET_SIZE];  
             DatagramPacket request = new DatagramPacket(buffer, buffer.length,  
@@ -94,7 +96,7 @@ public class SntpClient {
             mNtpTimeReference = responseTicks;  
             mRoundTripTime = roundTripTime;  
         } catch (Exception e) {  
-   
+            L.d("error"+e);
             return false;  
         }  
    

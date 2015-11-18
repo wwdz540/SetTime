@@ -12,6 +12,8 @@ public class SharePreferenceUtil {
 	private static final String TIME = "time";
 	private static final String VERSION = "version";
 	private static final String PINYIN = "pinyin";
+	private static final String TNP_URL="tnp_url";
+
 	private SharedPreferences sp;
 	private SharedPreferences.Editor editor;
 
@@ -87,5 +89,16 @@ public class SharePreferenceUtil {
 	}
 	public String getPinyin() {
 		return sp.getString(PINYIN, "beijing");
+	}
+
+
+	public void setNtpService(String url){
+		editor.putString(TNP_URL,url);
+		editor.commit();
+	}
+
+	public String getNtpService(){
+
+		return sp.getString(TNP_URL,"");
 	}
 }

@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.android.volley.Request;
@@ -29,19 +28,20 @@ import com.winhands.service.FxService;
 import com.winhands.service.SyncService;
 import com.winhands.service.FxService.onServiceCreate;
 import com.winhands.service.SyncService.onButtonChanged;
+import com.winhands.service.TsaService;
 import com.winhands.settime.R;
 import com.winhands.util.Calculate;
 import com.winhands.util.GetWeatherTask;
+import com.winhands.util.L;
 import com.winhands.util.SharePreferenceUtil;
 import com.winhands.util.SharePreferenceUtils;
 import com.winhands.util.T;
 import com.winhands.util.TimeUtil;
 
-import android.R.integer;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
@@ -52,6 +52,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.SystemClock;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
@@ -160,6 +161,25 @@ public class MainActivity extends Activity implements OnTouchListener,
 	private int exitValue;
 	private boolean timeoutFlag = false;
 
+	/***
+	 * 所有tnp服务的名称
+	 */
+	public static final String[] TNP_NAMES ={"1.国家授时中心","2.网络授时网络一","3.网络授时网络二","4.网络授时网络三","5.网络授时网络四","5.网络授时网络五"};
+	/***
+	 * 所有tnp服务的地址
+	 */
+	public static final String[] TNP_URL ={"210.72.145.44",
+			"1.cn.pool.ntp.org",
+			"2.cn.pool.ntp.org",
+			"3.cn.pool.ntp.org",
+			"0.cn.pool.ntp.org",
+			"cn.pool.ntp.org"};
+
+	public static  final String DEFAULT_TNP="1.cn.pool.ntp.org";
+
+
+	private String currntTnp=DEFAULT_TNP;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -171,12 +191,13 @@ public class MainActivity extends Activity implements OnTouchListener,
 		FxService.osc = this;
 		WheatherActivity.ost = this;
 		mSpUtil = BaseApplication.getInstance().getSharePreferenceUtil();
+
 		initRoot();
 		initList();
 		initValues();
 		initView();
 		content.setOnTouchListener(this);
-
+	//	startService(new Intent(this.getApplicationContext(),TsaService.class));
 		mHandler = new Handler() {
 			@Override
 			public void handleMessage(Message msg) {
@@ -227,10 +248,85 @@ public class MainActivity extends Activity implements OnTouchListener,
 					cityName.setText(s);
 					cityName.setTextSize(17);
 				}
+				if(msg.what==20){
+					checkTnpError();
+				}
 			}
+
+
 		};
 		new GetWeatherTask(mHandler, new City(null, mSpUtil.getCity(), null,
 				mSpUtil.getPinyin(), null)).execute();
+
+
+		initTnp();
+
+	}
+
+	private void initTnp(){
+		if("".equals(mSpUtil.getNtpService())){
+
+			//dialog参数设置
+			AlertDialog.Builder builder=new AlertDialog.Builder(this);  //先得到构造器
+			builder.setItems(TNP_NAMES, new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					currntTnp = TNP_URL[which];
+					mSpUtil.setNtpService(currntTnp);
+					mHandler.sendEmptyMessageDelayed(20,6000);
+					cancelTimer();
+					restartTimer();
+
+				}
+			});
+			builder.setCancelable(false);
+			builder.setTitle("请选择NTP服务器"); //设置标题
+
+			builder.create().show();
+		}else{
+			currntTnp=mSpUtil.getNtpService();
+			mHandler.sendEmptyMessageDelayed(20,6000);
+		}
+		Log.d("chain settime", currntTnp);
+	}
+
+	/**private  Runnable checkErroRunabel = new Runnable() {
+		@Override
+		public void run() {
+			SntpClient client = new SntpClient();
+			L.d("checkEror")
+			if(client.requestTime(currntTnp,5000){
+				tnpError();
+			}
+		}
+	};**/
+
+	private  void checkTnpError(){
+//		(new Thread(){
+//			@Override
+//			public void run() {
+//				try {
+//					Thread.sleep(3000);
+//					L.d("timemoutflag:"+timeoutFlag);
+//					if(timeoutFlag){
+//						mHandler.sendEmptyMessage(20);
+//					}
+//				} catch (InterruptedException e) {
+//					e.printStackTrace();
+//				}
+//			}
+//		}).start();
+
+		if(timeoutFlag || net_time.getText().equals("")){
+			tnpError();
+		}
+
+	}
+
+	private  void tnpError(){
+		Toast.makeText(this.getApplicationContext(),"该服务连接出现问题,请选其它",Toast.LENGTH_LONG).show();
+		mSpUtil.setNtpService("");
+		initTnp();
 	}
 
 	private void initList() {
@@ -505,6 +601,12 @@ public class MainActivity extends Activity implements OnTouchListener,
 	private void initThread() {
 		BaseApplication.getInstance().setNTPFlag(true);
 		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				getNetDate(currntTnp);
+			}
+		}).start();
+		/**	new Thread(new Runnable() {
 
 			@Override
 			public void run() {
@@ -546,7 +648,7 @@ public class MainActivity extends Activity implements OnTouchListener,
 				getNetDate("cn.pool.ntp.org");
 			}
 		}).start();
-
+		**/
 	}
 
 	public String invertWeekday(int weekday) {
@@ -610,8 +712,8 @@ public class MainActivity extends Activity implements OnTouchListener,
 					// FxService.class);
 					// startService(floatIntent);
 				}
-				cancelTimer();
-				wakeupTimer();
+				//cancelTimer();
+				//wakeupTimer();
 			} else {
 				Toast.makeText(MainActivity.this, "网络连接失败,无法对时",
 						Toast.LENGTH_SHORT).show();
@@ -707,12 +809,13 @@ public class MainActivity extends Activity implements OnTouchListener,
 
 	@Override
 	public void setCityName(City city) {
-		cityName.setText(city.getName()+" >");
+		cityName.setText(city.getName() + " >");
 		new GetWeatherTask(mHandler, new City(null, city.getName(), null,
 				city.getPinyin(), null)).execute();
 	}
 
 	private void getNetDate(String ip) {
+		L.d(ip);
 		SntpClient client = new SntpClient();
 		if (client.requestTime(ip, 3000)) {
 			if (BaseApplication.getInstance().isNTPFlag()) {
@@ -733,6 +836,8 @@ public class MainActivity extends Activity implements OnTouchListener,
 				mTimerNet.schedule(mTimerTaskNet, 0, 1000);
 			}
 		} else {
+
+
 			if (BaseApplication.getInstance().isNTPFlag()) {
 				BaseApplication.getInstance().setNTPFlag(false);
 				System.out.println("timeout");
