@@ -46,31 +46,31 @@
         </activity>
         <activity
             android:name="com.winhands.activity.SelectCtiyActivity"
-            android:theme="@android:style/Theme.NoTitleBar" >
-        </activity>
+            android:theme="@android:style/Theme.NoTitleBar" />
         <activity
             android:name="com.winhands.activity.WheatherActivity"
-            android:theme="@android:style/Theme.NoTitleBar" >
-        </activity>
+            android:theme="@android:style/Theme.NoTitleBar" />
         <activity
             android:name="com.winhands.activity.NewsListActivity"
-            android:theme="@android:style/Theme.NoTitleBar" >
-        </activity>
+            android:theme="@android:style/Theme.NoTitleBar" />
         <activity
             android:name="com.winhands.activity.NewInfoActivity"
-            android:theme="@android:style/Theme.NoTitleBar" >
-        </activity>
+            android:theme="@android:style/Theme.NoTitleBar" />
 
-        <service android:name="com.winhands.service.SyncService" >
-        </service>
-        <service android:name="com.winhands.service.FxService" >
-        </service>
+        <service android:name="com.winhands.service.SyncService" />
+        <service android:name="com.winhands.service.FxService" />
 
         <receiver android:name="com.winhands.widgets.TimerAppWidgetProvider" >
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.untas.UPDATE_ALL" />
                 <action android:name="com.untas.ACTION_SERVICE_STOP" />
+                <action android:name="com.untsa.TIMER_APP_WEIDGET_CLICK" />
+                <action android:name="android.intent.action.SCREEN_OFF" />
+                <action android:name="android.intent.action.SCREEN_ON" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+
+                <category android:name="android.intent.category.HOME" />
             </intent-filter>
 
             <meta-data
@@ -80,15 +80,31 @@
 
         <service
             android:name="com.winhands.widgets.TimerService"
+            android:enabled="true"
+            android:exported="true"
             android:process=":remote" >
             <intent-filter>
                 <action android:name="aw.untas.com.timerappwidget.TimerService" />
+
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </service>
         <!-- <service -->
         <!-- android:name="com.winhands.widgets.TimerIntentService" -->
         <!-- android:exported="false" > -->
         <!-- </service> -->
+        <service
+            android:name="com.winhands.service.TsaService"
+            android:enabled="true"
+            android:exported="true" >
+        </service>
+
+        <receiver
+            android:name="com.winhands.widgets.MyReceiver"
+            android:enabled="true"
+            android:exported="true" >
+            <action android:name="android.intent.action.SCREEN_ON" />
+        </receiver>
     </application>
 
 </manifest>
