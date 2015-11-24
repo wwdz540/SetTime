@@ -103,7 +103,7 @@ public class TimerService extends Service implements Runnable {
          notification.setLatestEventInfo(this, "时间服务", "时间服务",
          pendingintent);
          startForeground(0x111, notification);**/
-        return super.onStartCommand(intent, flags, startId);
+        return START_STICKY;
 
     }
 
@@ -131,8 +131,7 @@ public class TimerService extends Service implements Runnable {
         if(client.requestTime(ip,300)){
 
 
-           long now = client.getNtpTime() + System.nanoTime() / 1000
-                    - client.getNtpTimeReference();
+            long now = client.getNtpTime() + SystemClock.elapsedRealtime() - client.getNtpTimeReference();
             synchronized (netDAteCal) {
                 netDate = new Date(now
                         - ((8 - sp.getInt("timezone", 8)) * 60 * 60 * 1000));
