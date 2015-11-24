@@ -98,12 +98,6 @@
          android:enabled="true"
          android:exported="true" >
          </service>
-        <receiver
-            android:name="com.winhands.widgets.MyReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <action android:name="android.intent.action.SCREEN_ON" />
-        </receiver>
     </application>
 
 </manifest>
