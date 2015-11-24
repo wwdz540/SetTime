@@ -28,9 +28,7 @@ import com.winhands.service.FxService;
 import com.winhands.service.SyncService;
 import com.winhands.service.FxService.onServiceCreate;
 import com.winhands.service.SyncService.onButtonChanged;
-import com.winhands.service.TsaService;
 import com.winhands.settime.R;
-import com.winhands.util.Calculate;
 import com.winhands.util.GetWeatherTask;
 import com.winhands.util.L;
 import com.winhands.util.SharePreferenceUtil;
@@ -45,6 +43,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -52,7 +52,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.SystemClock;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
@@ -70,7 +69,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class MainActivity extends Activity implements OnTouchListener,
+
+public class MainActivity extends StartActivity implements OnTouchListener,
 		OnClickListener, onCityNameChanged, onButtonChanged, onServiceCreate,
 		onSelected {
 
@@ -149,7 +149,7 @@ public class MainActivity extends Activity implements OnTouchListener,
 	private ImageView iv_h1, iv_h2;
 	private ImageView iv_m1, iv_m2;
 	private LinearLayout citySetting, setTimeZone, setTimeFrequent,
-			setBackground, notice, serverSetting;
+			setBackground, notice, serverSetting,ntpServiceSetting;
 	private SharedPreferences sp;
 	private Date netDate;
 	private Calendar calendar;
@@ -164,18 +164,18 @@ public class MainActivity extends Activity implements OnTouchListener,
 	/***
 	 * 所有tnp服务的名称
 	 */
-	public static final String[] TNP_NAMES ={"1.国家授时中心","2.网络授时网络一","3.网络授时网络二","4.网络授时网络三","5.网络授时网络四","5.网络授时网络五"};
+	public static final String[] TNP_NAMES ={"1.国家授时中心","2.网络授时服务一","3.网络授时服务二","4.网络授时服务三","5.网络授时服务四","5.网络授时服务五"};
 	/***
 	 * 所有tnp服务的地址
 	 */
-	public static final String[] TNP_URL ={"210.72.145.44",
+	public static final String[] TNP_URL ={"210.72.145.47",
 			"1.cn.pool.ntp.org",
 			"2.cn.pool.ntp.org",
 			"3.cn.pool.ntp.org",
 			"0.cn.pool.ntp.org",
 			"cn.pool.ntp.org"};
 
-	public static  final String DEFAULT_TNP="1.cn.pool.ntp.org";
+	public static  final String DEFAULT_TNP=TNP_URL[0];
 
 
 	private String currntTnp=DEFAULT_TNP;
@@ -184,6 +184,7 @@ public class MainActivity extends Activity implements OnTouchListener,
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+
 		sp = new SharePreferenceUtils(this).getSP();
 		calendar = Calendar.getInstance();
 		SelectCtiyActivity.ocnc = this;
@@ -199,15 +200,18 @@ public class MainActivity extends Activity implements OnTouchListener,
 		content.setOnTouchListener(this);
 	//	startService(new Intent(this.getApplicationContext(),TsaService.class));
 		mHandler = new Handler() {
+
+			final SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy/MM/dd");
+			final SimpleDateFormat sdf2 = new SimpleDateFormat("HH:mm:ss");
 			@Override
 			public void handleMessage(Message msg) {
 				if (msg.what == 1) {
-					local_date.setText(msg.getData().getString("local_date")
+					Date now = new Date();
+					local_date.setText(sdf1.format(now)
 							+ " "
-							+ invertWeekday(msg.getData().getInt(
-									"local_weekday")));
-					local_time.setText(msg.getData().getString("local_time"));
-					setClockAnimation(1, msg.getData().getString("local_time"));
+							+ invertWeekday(now.getDay()));
+					local_time.setText(sdf2.format(now));
+					setClockAnimation(1, sdf2.format(now));
 				}
 				if (msg.what == 2) {
 					net_date.setText(msg.getData().getString("net_date")
@@ -251,6 +255,10 @@ public class MainActivity extends Activity implements OnTouchListener,
 				if(msg.what==20){
 					checkTnpError();
 				}
+
+				if(msg.what==21){
+					tnpError();
+				}
 			}
 
 
@@ -258,13 +266,22 @@ public class MainActivity extends Activity implements OnTouchListener,
 		new GetWeatherTask(mHandler, new City(null, mSpUtil.getCity(), null,
 				mSpUtil.getPinyin(), null)).execute();
 
+		if(!mSpUtil.getNtpService().equals("")){
+			currntTnp = mSpUtil.getNtpService();
+		}
 
-		initTnp();
+		//currntTnp=(mSpUtil.getNtpService().equals("")?TNP_URL[1]:mSpUtil.getNtpService());
+
+		setNtpText();
+		//initTnp();
 
 	}
 
+
+
 	private void initTnp(){
-		if("".equals(mSpUtil.getNtpService())){
+	//	if("".equals(mSpUtil.getNtpService())){
+
 
 			//dialog参数设置
 			AlertDialog.Builder builder=new AlertDialog.Builder(this);  //先得到构造器
@@ -272,23 +289,38 @@ public class MainActivity extends Activity implements OnTouchListener,
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					currntTnp = TNP_URL[which];
+
+					setNtpText();
 					mSpUtil.setNtpService(currntTnp);
-					mHandler.sendEmptyMessageDelayed(20,6000);
+					mHandler.sendEmptyMessageDelayed(20, 6000);
 					cancelTimer();
 					restartTimer();
 
 				}
 			});
-			builder.setCancelable(false);
+			//builder.setCancelable(false);
 			builder.setTitle("请选择NTP服务器"); //设置标题
 
 			builder.create().show();
-		}else{
-			currntTnp=mSpUtil.getNtpService();
-			mHandler.sendEmptyMessageDelayed(20,6000);
-		}
-		Log.d("chain settime", currntTnp);
+	//	}else{
+	//		currntTnp=mSpUtil.getNtpService();
+		//	mHandler.sendEmptyMessageDelayed(20,6000);
+	//	}
+	//	Log.d("chain settime", currntTnp);
 	}
+
+	private void setNtpText(){
+
+		TextView mTv= (TextView)findViewById(R.id.settime_service_txt);
+		for(int i=0;i<TNP_URL.length;i++){
+			if(TNP_URL[i].equals(currntTnp)){
+				String tnpName= TNP_NAMES[i];
+				mTv.setText(tnpName.substring(2,tnpName.length()));
+			}
+		}
+	}
+
+
 
 	/**private  Runnable checkErroRunabel = new Runnable() {
 		@Override
@@ -317,16 +349,19 @@ public class MainActivity extends Activity implements OnTouchListener,
 //			}
 //		}).start();
 
-		if(timeoutFlag || net_time.getText().equals("")){
-			tnpError();
-		}
+	//	if(timeoutFlag || net_time.getText().equals("")){
+		//	tnpError();
+	//	}
 
 	}
 
 	private  void tnpError(){
-		Toast.makeText(this.getApplicationContext(),"该服务连接出现问题,请选其它",Toast.LENGTH_LONG).show();
-		mSpUtil.setNtpService("");
-		initTnp();
+	//	Toast.makeText(this.getApplicationContext(),"网络连接失败",Toast.LENGTH_LONG).show();
+		AlertDialog.Builder  builder = new AlertDialog.Builder(this);
+		builder.setMessage("网络连接失败");
+		builder.create().show();
+		//mSpUtil.setNtpService("");
+		//initTnp();
 	}
 
 	private void initList() {
@@ -537,6 +572,8 @@ public class MainActivity extends Activity implements OnTouchListener,
 				// msg.what = 1;
 				// mHandler.sendMessage(msg);
 
+				mHandler.sendEmptyMessage(1);
+
 			}
 		};
 		mTimerNet = new Timer();
@@ -548,14 +585,14 @@ public class MainActivity extends Activity implements OnTouchListener,
 
 				SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy/MM/dd");
 				SimpleDateFormat sdf2 = new SimpleDateFormat("HH:mm:ss");
-				Bundle bundle = new Bundle();
+			/*	Bundle bundle = new Bundle();
 				bundle.putString("local_date", sdf1.format(date));
 				bundle.putString("local_time", sdf2.format(date));
 				bundle.putInt("local_weekday", date.getDay());
 				Message msg = new Message();
 				msg.setData(bundle);
 				msg.what = 1;
-				mHandler.sendMessage(msg);
+				mHandler.sendMessage(msg);*/
 				Bundle bundle2 = new Bundle();
 				bundle2.putString("net_date", sdf1.format(netDate));
 				bundle2.putString("net_time", sdf2.format(netDate));
@@ -588,7 +625,7 @@ public class MainActivity extends Activity implements OnTouchListener,
 
 	public void restartTimer() {
 		initTimer();
-		mTimerLocal.schedule(mTimerTaskLocal, 0, 50);
+		mTimerLocal.schedule(mTimerTaskLocal, 0, 1000);
 		initThread();
 	}
 
@@ -599,6 +636,7 @@ public class MainActivity extends Activity implements OnTouchListener,
 	}
 
 	private void initThread() {
+		mHandler.sendEmptyMessageDelayed(20,4000);
 		BaseApplication.getInstance().setNTPFlag(true);
 		new Thread(new Runnable() {
 			@Override
@@ -606,7 +644,7 @@ public class MainActivity extends Activity implements OnTouchListener,
 				getNetDate(currntTnp);
 			}
 		}).start();
-		/**	new Thread(new Runnable() {
+	/*	new Thread(new Runnable() {
 
 			@Override
 			public void run() {
@@ -647,8 +685,8 @@ public class MainActivity extends Activity implements OnTouchListener,
 			public void run() {
 				getNetDate("cn.pool.ntp.org");
 			}
-		}).start();
-		**/
+		}).start();*/
+
 	}
 
 	public String invertWeekday(int weekday) {
@@ -687,7 +725,13 @@ public class MainActivity extends Activity implements OnTouchListener,
 	@Override
 	public void onClick(View v) {
 		Intent mIntent;
+		L.d("onClick","click");
 		switch (v.getId()) {
+
+		case R.id.setting_timeservice:
+				L.d("settiong serivce");
+				initTnp();
+				break;
 		case R.id.citysetting:
 			mIntent = new Intent(MainActivity.this, SelectCtiyActivity.class);
 			startActivity(mIntent);
@@ -712,8 +756,10 @@ public class MainActivity extends Activity implements OnTouchListener,
 					// FxService.class);
 					// startService(floatIntent);
 				}
-				//cancelTimer();
-				//wakeupTimer();
+			//	cancelTimer();
+			//	wakeupTimer();
+				//mTimerTaskNet.cancel();
+				//initThread();
 			} else {
 				Toast.makeText(MainActivity.this, "网络连接失败,无法对时",
 						Toast.LENGTH_SHORT).show();
@@ -814,46 +860,63 @@ public class MainActivity extends Activity implements OnTouchListener,
 				city.getPinyin(), null)).execute();
 	}
 
+	private int errorCount=0;
 	private void getNetDate(String ip) {
-		L.d(ip);
+
 		SntpClient client = new SntpClient();
 		if (client.requestTime(ip, 3000)) {
-			if (BaseApplication.getInstance().isNTPFlag()) {
-				BaseApplication.getInstance().setNTPFlag(false);
+			errorCount=0;
+//			if (BaseApplication.getInstance().isNTPFlag()) {
+//				BaseApplication.getInstance().setNTPFlag(false);
 				timeoutFlag = false;
-				long now = client.getNtpTime() + System.nanoTime() / 1000
-						- client.getNtpTimeReference();
-				BaseApplication
-						.getInstance()
-						.getDB()
-						.insertTime(
-								new Date().getTime() - sp.getInt("timezone", 8)
-										* 60 * 60 * 1000, now);
+				long now = client.getNtpTime() + SystemClock.elapsedRealtime() - client.getNtpTimeReference();
+//				BaseApplication
+//						.getInstance()
+//						.getDB()
+//						.insertTime(
+//								new Date().getTime() - sp.getInt("timezone", 8)
+//										* 60 * 60 * 1000, now);
+
 				netDate = new Date(now
 						- ((8 - sp.getInt("timezone", 8)) * 60 * 60 * 1000));
 				SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy/MM/dd");
 				SimpleDateFormat sdf2 = new SimpleDateFormat("HH:mm:ss");
 				mTimerNet.schedule(mTimerTaskNet, 0, 1000);
-			}
+			//}
 		} else {
 
+			if(errorCount<1) {
+				errorCount++;
+				mHandler.removeMessages(21);
+				mHandler.postDelayed(new Runnable() {
+					@Override
+					public void run() {
+						getNetDate(currntTnp);
+					}
+				}, 2000);
 
-			if (BaseApplication.getInstance().isNTPFlag()) {
-				BaseApplication.getInstance().setNTPFlag(false);
-				System.out.println("timeout");
-				timeoutFlag = true;
-				long cTime = Calculate.getEstimateTime(new Date().getTime()
-						- sp.getInt("timezone", 8) * 60 * 60 * 1000)
-						- ((8 - sp.getInt("timezone", 8)) * 60 * 60 * 1000);
-				if (cTime == 0) {
-
-				} else {
-					netDate = new Date(cTime);
-					SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy/MM/dd");
-					SimpleDateFormat sdf2 = new SimpleDateFormat("HH:mm:ss");
-					mTimerNet.schedule(mTimerTaskNet, 0, 1000);
-				}
+			}else{
+				mHandler.removeMessages(21);
+				errorCount = 0;
+				mHandler.sendEmptyMessage(21);
 			}
+
+//			if (BaseApplication.getInstance().isNTPFlag()) {
+//				BaseApplication.getInstance().setNTPFlag(false);
+//				System.out.println("timeout");
+//				timeoutFlag = true;
+//				long cTime = Calculate.getEstimateTime(new Date().getTime()
+//						- sp.getInt("timezone", 8) * 60 * 60 * 1000)
+//						- ((8 - sp.getInt("timezone", 8)) * 60 * 60 * 1000);
+//				if (cTime == 0) {
+//
+//				} else {
+//					netDate = new Date(cTime);
+//					SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy/MM/dd");
+//					SimpleDateFormat sdf2 = new SimpleDateFormat("HH:mm:ss");
+//					mTimerNet.schedule(mTimerTaskNet, 0, 1000);
+//				}
+//			}
 		}
 
 	}
@@ -886,6 +949,8 @@ public class MainActivity extends Activity implements OnTouchListener,
 		openweb = (TextView) content.findViewById(R.id.openweb);
 		settime_frequent_text = (TextView) menu
 				.findViewById(R.id.settime_frequent_text);
+		ntpServiceSetting =(LinearLayout) menu.findViewById(R.id.setting_timeservice);
+
 		citySetting = (LinearLayout) menu.findViewById(R.id.citysetting);
 		setTimeZone = (LinearLayout) menu.findViewById(R.id.setTimeZone);
 		setBackground = (LinearLayout) menu.findViewById(R.id.background);
@@ -922,6 +987,8 @@ public class MainActivity extends Activity implements OnTouchListener,
 		setTimeZone.setOnClickListener(this);
 		cityName.setOnClickListener(this);
 		citySetting.setOnClickListener(this);
+		ntpServiceSetting.setOnClickListener(this);
+		serverSetting.setOnClickListener(this);
 		notice.setOnClickListener(this);
 		serverSetting.setOnClickListener(this);
 		news.setOnClickListener(this);
